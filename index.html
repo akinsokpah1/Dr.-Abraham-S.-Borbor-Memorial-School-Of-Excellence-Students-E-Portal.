@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dr. Abraham S. Borbor Memorial School Of Excellence - E-Portal</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  body { margin:0; font-family:'Segoe UI',sans-serif; transition:background 0.3s,color 0.3s;}
+  header { background:#111; padding:20px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.3);}
+  header h1{color:#00e5ff; margin:5px 0;}
+  header p{color:#ccc; margin:0;}
+  .theme-toggle{position:absolute; top:20px; right:20px; padding:10px 15px; border-radius:8px; background:#00e5ff; color:#000; font-weight:bold;}
+  .container{max-width:1000px; margin:40px auto; background:rgba(255,255,255,0.05); padding:30px; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,0.5);}
+  input, select{width:100%; padding:12px; margin:10px 0 20px 0; border:none; border-radius:8px;}
+  button{background:#00e5ff; border:none; padding:12px 25px; border-radius:8px; color:#000; cursor:pointer; transition:.3s;}
+  button:hover{background:#00bcd4; color:#fff;}
+  .dashboard{display:none;}
+  .dashboard h2{color:#ffde59; margin-bottom:15px;}
+  .dashboard .card{background:rgba(255,255,255,0.1); padding:20px; border-radius:10px; margin-bottom:15px; transition:transform 0.3s;}
+  .dashboard .card:hover{transform:translateY(-5px);}
+  .flex{display:flex; flex-wrap:wrap; gap:15px;}
+  .card.small{flex:1 1 calc(50% - 20px);}
+  .alert{padding:10px; margin-bottom:20px; border-radius:8px; color:#000; display:none;}
+  .alert.success{background:#00ff7f;} .alert.error{background:#ff4d4d;}
+  @media(max-width:600px){ .container{margin:20px; padding:20px;} .card.small{flex:1 1 100%;} }
+</style>
+</head>
+<body>
+<header>
+  <img src="data:image/png;base64,PUT_YOUR_BASE64_LOGO_HERE" alt="School Logo" style="height:80px; display:block; margin:0 auto 10px auto;">
+  <h1>Dr. Abraham S. Borbor Memorial School Of Excellence</h1>
+  <p>Advanced E-Portal System</p>
+  <button class="theme-toggle" onclick="toggleTheme()">Toggle Light/Dark</button>
+</header>
+
+<div class="container">
+
+  <!-- Login Form -->
+  <div id="loginForm">
+    <h2>Login</h2>
+    <div class="alert" id="loginAlert"></div>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <select id="role">
+      <option value="student">Student</option>
+      <option value="teacher">Teacher/Admin</option>
+    </select>
+    <button onclick="login()">Login</button>
+    <p>Don't have an account? <a href="#" onclick="showRegister()">Register</a></p>
+  </div>
+
+  <!-- Registration Form -->
+  <div id="registerForm" style="display:none;">
+    <h2>Register</h2>
+    <div class="alert" id="registerAlert"></div>
+    <input type="text" id="regName" placeholder="Full Name">
+    <input type="email" id="regEmail" placeholder="Email">
+    <input type="text" id="regUsername" placeholder="Username">
+    <input type="password" id="regPassword" placeholder="Password">
+    <select id="regRole">
+      <option value="student">Student</option>
+      <option value="teacher">Teacher/Admin</option>
+    </select>
+    <button onclick="register()">Register</button>
+    <p>Already have an account? <a href="#" onclick="showLogin()">Login</a></p>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="dashboard" id="dashboard">
+    <h2>Welcome, <span id="userDisplay"></span>!</h2>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" style="display:none;">
+      <div class="card">
+        <h3>Manage Courses</h3>
+        <input type="text" id="courseName" placeholder="Course Name">
+        <button onclick="addCourse()">Add Course</button>
+        <ul id="coursesList"></ul>
+      </div>
+      <div class="card">
+        <h3>Manage Students & Grades</h3>
+        <input type="text" id="studentName" placeholder="Student Name">
+        <input type="text" id="studentUsername" placeholder="Student Username">
+        <input type="text" id="studentGrade" placeholder="Grade">
+        <select id="courseSelectAdmin"></select>
+        <button onclick="addGrade()">Add/Update Grade</button>
+        <ul id="gradesList"></ul>
+      </div>
+      <div class="card">
+        <h3>Announcements</h3>
+        <input type="text" id="announcementText" placeholder="New announcement">
+        <button onclick="addAnnouncement()">Post Announcement</button>
+        <ul id="announcementsList"></ul>
+      </div>
+    </div>
+
+    <!-- Student Panel -->
+    <div id="studentPanel" style="display:none;">
+      <div class="card">
+        <h3>Your Info</h3>
+        <p id="studentInfo"></p>
+      </div>
+      <div class="card">
+        <h3>Enroll Courses</h3>
+        <select id="courseSelectStudent"></select>
+        <button onclick="enrollCourse()">Enroll</button>
+        <ul id="studentCourses"></ul>
+      </div>
+      <div class="card">
+        <h3>Your Grades</h3>
+        <canvas id="gradeChart" width="400" height="200"></canvas>
+      </div>
+      <div class="card">
+        <h3>Announcements</h3>
+        <ul id="studentAnnouncements"></ul>
+      </div>
+    </div>
+
+    <button onclick="logout()">Logout</button>
+  </div>
+
+</div>
+
+<script>
+let users=JSON.parse(localStorage.getItem('users'))||[];
+let courses=JSON.parse(localStorage.getItem('courses'))||[];
+let grades=JSON.parse(localStorage.getItem('grades'))||[];
+let announcements=JSON.parse(localStorage.getItem('announcements'))||[];
+let theme=localStorage.getItem('theme')||'dark';
+document.body.dataset.theme=theme;
+
+function toggleTheme(){
+  theme=theme==='dark'?'light':'dark';
+  document.body.dataset.theme=theme;
+  localStorage.setItem('theme',theme);
+  if(theme==='light'){document.body.style.background='#f5f5f5'; document.body.style.color='#000';} 
+  else{document.body.style.background='#0f2027'; document.body.style.color='#fff';}
+}
+
+function showRegister(){document.getElementById('loginForm').style.display='none'; document.getElementById('registerForm').style.display='block';}
+function showLogin(){document.getElementById('registerForm').style.display='none'; document.getElementById('loginForm').style.display='block';}
+
+function register(){
+  const name=document.getElementById('regName').value;
+  const email=document.getElementById('regEmail').value;
+  const username=document.getElementById('regUsername').value;
+  const password=document.getElementById('regPassword').value;
+  const role=document.getElementById('regRole').value;
+  const alertBox=document.getElementById('registerAlert');
+  if(!name||!email||!username||!password){alertBox.style.display='block'; alertBox.className='alert error'; alertBox.innerText='All fields required'; return;}
+  if(users.find(u=>u.username===username)){alertBox.style.display='block'; alertBox.className='alert error'; alertBox.innerText='Username exists'; return;}
+  users.push({name,email,username,password,role});
+  localStorage.setItem('users',JSON.stringify(users));
+  alertBox.style.display='block'; alertBox.className='alert success'; alertBox.innerText='Registered! You can now login.';
+  setTimeout(showLogin,1500);
+}
+
+function login(){
+  const username=document.getElementById('username').value;
+  const password=document.getElementById('password').value;
+  const role=document.getElementById('role').value;
+  const alertBox=document.getElementById('loginAlert');
+  const user=users.find(u=>u.username===username && u.password===password && u.role===role);
+  if(user){
+    document.getElementById('loginForm').style.display='none';
+    document.getElementById('dashboard').style.display='block';
+    document.getElementById('userDisplay').innerText=user.name;
+    if(role==='teacher'){document.getElementById('adminPanel').style.display='block'; document.getElementById('studentPanel').style.display='none'; loadAdminData();} 
+    else{document.getElementById('adminPanel').style.display='none'; document.getElementById('studentPanel').style.display='block'; loadStudentData(user.username);}
+  } else {alertBox.style.display='block'; alertBox.className='alert error'; alertBox.innerText='Invalid credentials';}
+}
+
+function logout(){document.getElementById('dashboard').style.display='none'; document.getElementById('loginForm').style.display='block';}
+
+function addCourse(){
+  const cname=document.getElementById('courseName').value;
+  if(!cname) return alert('Enter course name');
+  if(courses.find(c=>c===cname)) return alert('Course exists');
+  courses.push(cname);
+  localStorage.setItem('courses',JSON.stringify(courses));
+  document.getElementById('courseName').value='';
+  loadAdminData();
+}
+
+function addGrade(){
+  const sname=document.getElementById('studentName').value;
+  const suser=document.getElementById('studentUsername').value;
+  const grade=document.getElementById('studentGrade').value;
+  const course=document.getElementById('courseSelectAdmin').value;
+  if(!sname||!suser||!grade||!course) return alert('All fields required');
+  const existing=grades.find(g=>g.username===suser && g.course===course);
+  if(existing){existing.grade=Number(grade); existing.name=sname;} 
+  else{grades.push({username:suser,name:sname,course,grade:Number(grade)});}
+  localStorage.setItem('grades',JSON.stringify(grades));
+  loadAdminData();
+}
+
+function addAnnouncement(){
+  const text=document.getElementById('announcementText').value;
+  if(!text) return;
+  announcements.push({text,date:new Date().toLocaleString()});
+  localStorage.setItem('announcements',JSON.stringify(announcements));
+  document.getElementById('announcementText').value='';
+  loadAdminData();
+}
+
+function enrollCourse(){
+  const course=document.getElementById('courseSelectStudent').value;
+  const username=document.getElementById('userDisplay').innerText;
+  if(!course) return;
+  const enrolled=grades.find(g=>g.username===username && g.course===course);
+  if(enrolled) return alert('Already enrolled');
+  grades.push({username, name:username, course, grade:0});
+  localStorage.setItem('grades',JSON.stringify(grades));
+  loadStudentData(username);
+}
+
+function loadAdminData(){
+  const courseSelectAdmin=document.getElementById('courseSelectAdmin');
+  const coursesList=document.getElementById('coursesList');
+  courseSelectAdmin.innerHTML=''; coursesList.innerHTML='';
+  courses.forEach(c=>{ const opt=document.createElement('option'); opt.value=c; opt.innerText=c; courseSelectAdmin.appendChild(opt); const li=document.createElement('li'); li.innerText=c; coursesList.appendChild(li); });
+
+  const gradesList=document.getElementById('gradesList'); gradesList.innerHTML='';
+  grades.forEach(g=>{ const li=document.createElement('li'); li.innerText=`${g.name} (${g.username}) - ${g.course}: ${g.grade}`; gradesList.appendChild(li); });
+
+  const announcementsList=document.getElementById('announcementsList'); announcementsList.innerHTML='';
+  announcements.slice().reverse().forEach(a=>{ const li=document.createElement('li'); li.innerText=`[${a.date}] ${a.text}`; announcementsList.appendChild(li); });
+}
+
+function loadStudentData(username){
+  const user=users.find(u=>u.username===username);
+  document.getElementById('studentInfo').innerHTML=`<b>Name:</b> ${user.name}<br><b>Email:</b> ${user.email}`;
+
+  const courseSelectStudent=document.getElementById('courseSelectStudent');
+  const studentCourses=document.getElementById('studentCourses'); studentCourses.innerHTML=''; courseSelectStudent.innerHTML='';
+  courses.forEach(c=>{ const opt=document.createElement('option'); opt.value=c; opt.innerText=c; courseSelectStudent.appendChild(opt); });
+  grades.filter(g=>g.username===username).forEach(g=>{ const li=document.createElement('li'); li.innerText=`${g.course}: ${g.grade}`; studentCourses.appendChild(li); });
+
+  const studentAnnouncements=document.getElementById('studentAnnouncements'); studentAnnouncements.innerHTML='';
+  announcements.slice().reverse().forEach(a=>{ const li=document.createElement('li'); li.innerText=`[${a.date}] ${a.text}`; studentAnnouncements.appendChild(li); });
+
+  const ctx=document.getElementById('gradeChart').getContext('2d');
+  const chartData=grades.filter(g=>g.username===username).map(g=>({label:g.course, value:g.grade}));
+  if(window.gradeChart) window.gradeChart.destroy();
+  window.gradeChart=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:chartData.map(d=>d.label),
+      datasets:[{label:'Grades', data:chartData.map(d=>d.value), backgroundColor:'#00e5ff'}]
+    },
+    options:{scales:{y:{beginAtZero:true}}}
+  });
+}
+</script>
+</body>
+</html>
